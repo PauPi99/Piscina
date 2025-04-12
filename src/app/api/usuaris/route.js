@@ -7,7 +7,7 @@ import { z } from 'zod';
 export async function GET(req) {
   const admin = await getTokenFromRequest(req);
   if (!admin) {
-    return NextResponse.json({ error: 'No autoritzat' }, { status: 401 });
+    return NextResponse.json({ error: 'No autoritzat' }, { status: 401 }); //TODO mostrar pagina not found per no donar informació de l'error
   }
 
   try {
@@ -21,60 +21,80 @@ export async function GET(req) {
 }
 
 
+//Validació de les dades d'usuari amb Zod POST
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/; // Accepta el format YYYY-MM-DD
 
 const usuariSchema = z.object({
+
   nom: z.string().min(1, 'Nom és obligatori'),
+
   cognoms: z.string().min(1, 'Cognoms són obligatòris'),
-  preu: z.number().min(0, 'Preu ha de ser positiu'),
-  dni: z.string().optional(),
-  numCarnet: z.string().optional(),
-  email: z.string().email().optional(),
+
+  preu: z
+  .string() // Inicialment arriba com a string
+  .min(1, 'Preu és obligatori') // Valida que no estigui buit
+  .transform((v) => parseFloat(v)) // Converteix a número flotant
+  .refine((v) => !isNaN(v) && v >= 0, 'Preu ha de ser un número positiu'), // Valida que sigui un número positiu
+
+  dni: z.string().transform((v) => (v === "" ? undefined : v)).optional(),
+
+  numCarnet: z.string().transform((v) => (v === "" ? undefined : v)).optional(),
+
+  email: z.preprocess(
+    (v) => (v === "" ? undefined : v),
+    z.string().email().optional()
+  ),
+
   dataNaixement: z
-    .string()
-    .refine((valor) => {
-      // Comprovem si la data és vàlida
-      if (valor && dateRegex.test(valor)) {
-        const dataConvertida = new Date(valor);
-        return !isNaN(dataConvertida.getTime()); // Si és una data vàlida
-      }
-      return false; // Si la data no és vàlida, retornem false
-    }, {
-      message: "La data de naixement no és vàlida. Utilitza el format YYYY-MM-DD.",
-    })
-    .transform((valor) => {
-      if (valor && dateRegex.test(valor)) {
-        return new Date(valor); // Converteix la data si és vàlida
-      }
-      throw new Error("La data de naixement no és vàlida. Utilitza el format YYYY-MM-DD."); // Llença error si la data és invàlida
-    })
-    .optional(), // El camp és opcional
+  .string()
+  .transform((valor) => (valor === "" ? undefined : valor)) // <-- converteix "" a undefined
+  .refine((valor) => {
+    if (!valor) return true; // Si és undefined, és vàlid (perquè és optional)
+    if (dateRegex.test(valor)) {
+      const dataConvertida = new Date(valor);
+      return !isNaN(dataConvertida.getTime());
+    }
+    return false;
+  }, {
+    message: "La data de naixement no és vàlida. Utilitza el format YYYY-MM-DD.",
+  })
+  .transform((valor) => (valor ? new Date(valor) : undefined)) // converteix a Date si hi ha valor
+  .optional(),
+
   tipus: z.enum(['NORMAL', 'INFANTIL', 'AQUAGYM', 'INFANTIL_NATACIO'])
 });
 
 
-  // Funció per crear l'usuari
-  export async function POST(req) {
-    const token = await getTokenFromRequest(req);  // Obtenir el token des de la cookie
+
+  // POST: Crear usuaris
+export async function POST(request) {
+
+  const token = await getTokenFromRequest(request);  // Obtenir el token des de la cookie
   
-    if (!token) {
-      return new NextResponse('No autoritzat', { status: 401 });
-    }
-  
-    const body = await req.json();
-    try {
-      // Validació de les dades amb Zod
-      const validatedData = usuariSchema.parse(body);
-  
-      // Creació de l'usuari a la base de dades
-      const usuari = await prisma.usuari.create({
-        data: validatedData
-      });
-  
-      return new NextResponse(JSON.stringify(usuari), { status: 201 });
-    } catch (error) {
-      
-      console.error(error);
-      return new NextResponse(JSON.stringify({ message: 'Error de validació', details: error.errors }), { status: 400 });
-    }
+  if (!token) {
+    return new NextResponse('No autoritzat', { status: 401 });
   }
+
+  let data;
+  let validacio;
+
+  try {
+      data = await request.json();
+       validacio = usuariSchema.safeParse(data);
+      if (!validacio.success) {
+          return NextResponse.json(
+              { error: "Dades incorrectes", details: validacio.error.format() },
+              { status: 400 }
+          );
+      }
+  } catch (error) {
+      return NextResponse.json({ error: "Error processant la petició" }, { status: 400 });
+  }
+
+  try {
+      const nouUsuari = await prisma.usuari.create({ data: validacio.data });
+      return NextResponse.json(nouUsuari, { status: 201 });
+  } catch (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

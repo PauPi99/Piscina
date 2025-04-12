@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
 export async function POST(request) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const tokenCookie = cookieStore.get('token');
 
   if (!tokenCookie || !tokenCookie.value) {
@@ -22,7 +22,7 @@ export async function POST(request) {
       username: payload.username,
     })
       .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('1h')
+      .setExpirationTime('30s')
       .sign(JWT_SECRET);
 
     const response = NextResponse.json({ message: 'Token renovat' });

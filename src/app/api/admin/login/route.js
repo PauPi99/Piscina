@@ -35,7 +35,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Contrasenya incorrecta' }, { status: 401 });
     }
 
-    const token = jwt.sign({ id: admin.id, username: admin.username }, JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ id: admin.id, username: admin.username }, JWT_SECRET, { expiresIn: '30s' });
     console.log('Token generat:', token);
 
     // Espera a que la cookie es posi
