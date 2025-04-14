@@ -20,6 +20,8 @@ export default function UsuariPage() {
         return;
       }
 
+    fetchUsuaris();
+
       // ✅ Només si és vàlid, inicia el refresc automàtic
       const interval = setInterval(async () => {
         const renewRes = await fetch('/api/admin/renew', { method: 'POST' });
@@ -49,9 +51,6 @@ export default function UsuariPage() {
     }
   };
 
-  useEffect(() => {
-    fetchUsuaris();
-  }, []);
 
   const handleCreate = async (formData) => {
     setLoading(true);
