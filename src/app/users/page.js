@@ -9,57 +9,50 @@ export default function UsuariPage() {
   const [usuaris, setUsuaris] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
-
   const router = useRouter();
 
+  // ✅ Verificació inicial i inici de renovació
   useEffect(() => {
-    const checkToken = async () => {
-      const res = await fetch('/api/admin/renew', { method: 'POST' });
-      if (res.status === 401) {
-        router.push('/login'); // Redirigeix a login si el token no és vàlid
-      } else {
-        fetchUsuaris(); // Si el token és vàlid, carrega els usuaris
+    const verifyAndRenew = async () => {
+      const res = await fetch('/api/admin/verify', { method: 'POST' });
+      if (res.status !== 200) {
+        router.push('/login');
+        return;
       }
+
+      // ✅ Només si és vàlid, inicia el refresc automàtic
+      const interval = setInterval(async () => {
+        const renewRes = await fetch('/api/admin/renew', { method: 'POST' });
+        if (renewRes.status === 401) {
+          router.push('/login');
+        }
+      }, 50 * 60 * 1000); // Cada 50 minuts
+
+      return () => clearInterval(interval);
     };
-  
-    checkToken();
-  }, []);
-  
-  // 🔁 REFRESH AUTOMÀTIC DEL TOKEN
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      const res = await fetch('/api/admin/renew', { method: 'POST' });
-      if (res.status === 401) {
-        window.location.href = '/login'; // Redirigeix si falla la renovació
-      }
-    }, 50 * 60 * 1000); // Cada 50 minuts
-  console.log('Token renovat!');
-    return () => clearInterval(interval);
-  }, []);
 
+    verifyAndRenew();
+  }, [router]);
 
-  // Obtenir usuaris des de l'API
   const fetchUsuaris = async () => {
     setLoading(true);
     try {
       const res = await fetch('/api/usuaris');
       const data = await res.json();
       if (res.status === 200) {
-        setUsuaris(data); // Assignem els usuaris obtinguts a l'estat
+        setUsuaris(data);
       }
     } catch (err) {
-      console.error('Error en la petició de usuaris:', err);
+      console.error('Error en carregar usuaris:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUsuaris(); // Carregar usuaris en carregar la pàgina
+    fetchUsuaris();
   }, []);
 
-
-  // Funció per crear un usuari
   const handleCreate = async (formData) => {
     setLoading(true);
     try {
@@ -68,12 +61,16 @@ export default function UsuariPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-
-      const result = await res.json();
+  
+      const result = await res.json(); // Sempre esperar JSON
+  
       if (res.status === 201) {
         fetchUsuaris();
       } else if (res.status === 400) {
         setErrors(result.details || {});
+      } else if (res.status === 401) {
+        // Si el token és invàlid o caducat, redirigeix a login
+        router.push('/login');
       } else {
         console.error('Error inesperat:', result.error);
       }

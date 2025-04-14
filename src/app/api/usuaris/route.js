@@ -72,7 +72,7 @@ export async function POST(request) {
   const token = await getTokenFromRequest(request);  // Obtenir el token des de la cookie
   
   if (!token) {
-    return new NextResponse('No autoritzat', { status: 401 });
+    return NextResponse.json({ error: 'No autoritzat' }, { status: 401 });
   }
 
   let data;

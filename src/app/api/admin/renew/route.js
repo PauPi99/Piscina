@@ -22,7 +22,7 @@ export async function POST(request) {
       username: payload.username,
     })
       .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('30s')
+      .setExpirationTime('1h')
       .sign(JWT_SECRET);
 
     const response = NextResponse.json({ message: 'Token renovat' });
