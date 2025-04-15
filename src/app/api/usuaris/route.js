@@ -4,21 +4,82 @@ import { getTokenFromRequest } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
 
+// export async function GET(req) {
+//   const admin = await getTokenFromRequest(req);
+//   if (!admin) {
+//     return NextResponse.json({ error: 'No autoritzat' }, { status: 401 }); //TODO mostrar pagina not found per no donar informació de l'error
+//   }
+
+//   try {
+//     const usuaris = await prisma.usuari.findMany({
+//       orderBy: { dataAlta: 'desc' }
+//     });
+//     return NextResponse.json(usuaris);
+//   } catch (error) {
+//     return NextResponse.json({ error: 'Error al carregar usuaris' }, { status: 500 });
+//   }
+// }
+
+
 export async function GET(req) {
   const admin = await getTokenFromRequest(req);
   if (!admin) {
-    return NextResponse.json({ error: 'No autoritzat' }, { status: 401 }); //TODO mostrar pagina not found per no donar informació de l'error
+    return NextResponse.json({ error: 'No autoritzat' }, { status: 401 });
+  }
+
+  const { searchParams } = req.nextUrl;
+
+  const nom = searchParams.get('nom') || undefined;
+  const tipus = searchParams.get('tipus') || undefined;
+  const preu = searchParams.get('preu') || undefined;
+  const dataInici = searchParams.get('dataInici') || undefined;
+  const dataFi = searchParams.get('dataFi') || undefined;
+  const page = parseInt(searchParams.get('page')) || 1;
+  const pageSize = parseInt(searchParams.get('pageSize')) || 10;
+
+  const where = {};
+
+  if (nom) {
+    where.nom = { contains: nom, mode: 'insensitive' };
+  }
+
+  if (tipus) {
+    where.tipus = tipus;
+  }
+
+  if (preu) {
+    where.preu = parseFloat(preu);
+  }
+
+  if (dataInici && dataFi) {
+    where.dataAlta = {
+      gte: new Date(dataInici),
+      lte: new Date(dataFi)
+    };
   }
 
   try {
+    const total = await prisma.usuari.count({ where });
+
     const usuaris = await prisma.usuari.findMany({
-      orderBy: { dataAlta: 'desc' }
+      where,
+      orderBy: { dataAlta: 'desc' },
+      skip: (page - 1) * pageSize,
+      take: pageSize
     });
-    return NextResponse.json(usuaris);
+
+    return NextResponse.json({
+      usuaris,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize)
+    });
   } catch (error) {
     return NextResponse.json({ error: 'Error al carregar usuaris' }, { status: 500 });
   }
 }
+
 
 
 //Validació de les dades d'usuari amb Zod POST
