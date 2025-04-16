@@ -35,7 +35,7 @@ export async function GET(req) {
   const dataInici = searchParams.get('dataInici') || undefined;
   const dataFi = searchParams.get('dataFi') || undefined;
   const page = parseInt(searchParams.get('page')) || 1;
-  const pageSize = parseInt(searchParams.get('pageSize')) || 10;
+  const pageSize = parseInt(searchParams.get('pageSize')) || 20;
 
   const where = {};
 
@@ -60,6 +60,7 @@ export async function GET(req) {
 
   try {
     const total = await prisma.usuari.count({ where });
+    const totalGeneral = await prisma.usuari.count(); // Sense filtres
 
     const usuaris = await prisma.usuari.findMany({
       where,
@@ -67,10 +68,12 @@ export async function GET(req) {
       skip: (page - 1) * pageSize,
       take: pageSize
     });
+    
 
     return NextResponse.json({
       usuaris,
       total,
+      totalGeneral,
       page,
       pageSize,
       totalPages: Math.ceil(total / pageSize)

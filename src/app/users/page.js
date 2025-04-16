@@ -14,6 +14,8 @@ export default function UsuariPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
+  const [totalUsuaris, settotalUsuaris] = useState(0);
+
   const router = useRouter();
 
   useEffect(() => {
@@ -45,7 +47,7 @@ export default function UsuariPage() {
     const params = new URLSearchParams({
       ...filters,
       page,
-      pageSize: 10,
+      pageSize: 15,
     });
 
     try {
@@ -55,6 +57,7 @@ export default function UsuariPage() {
       if (res.status === 200) {
         setUsuaris(data.usuaris);
         setTotalPages(data.totalPages || 1);
+        settotalUsuaris(data.totalGeneral || 0); // ← aquí!
       }
     } catch (err) {
       console.error('Error en carregar usuaris:', err);
@@ -104,7 +107,7 @@ export default function UsuariPage() {
       <Filtres onChange={handleFiltersChange} />
 
       <h2>Llista d'Usuaris</h2>
-      {loading ? <p>Carregant...</p> : <TaulaUsuaris usuaris={usuaris} />}
+      {loading ? <p>Carregant...</p> : <TaulaUsuaris usuaris={usuaris} totalUsuaris={totalUsuaris} />}
 
       <div style={{ marginTop: '1rem' }}>
         {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
