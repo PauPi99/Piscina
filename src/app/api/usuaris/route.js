@@ -1,11 +1,11 @@
 // src/app/api/usuaris/route.js
 import { NextResponse } from 'next/server';
-import { getTokenFromRequest } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
+import { getTokenFromCookies } from '@/lib/auth';
 
 // export async function GET(req) {
-//   const admin = await getTokenFromRequest(req);
+//   const admin = await getTokenFromCookies(req);
 //   if (!admin) {
 //     return NextResponse.json({ error: 'No autoritzat' }, { status: 401 }); //TODO mostrar pagina not found per no donar informació de l'error
 //   }
@@ -22,7 +22,7 @@ import { z } from 'zod';
 
 
 export async function GET(req) {
-  const admin = await getTokenFromRequest(req);
+  const admin = await getTokenFromCookies(req);
   if (!admin) {
     return NextResponse.json({ error: 'No autoritzat' }, { status: 401 });
   }
@@ -133,7 +133,7 @@ const usuariSchema = z.object({
   // POST: Crear usuaris
 export async function POST(request) {
 
-  const token = await getTokenFromRequest(request);  // Obtenir el token des de la cookie
+  const token = await getTokenFromCookies(request);  // Obtenir el token des de la cookie
   
   if (!token) {
     return NextResponse.json({ error: 'No autoritzat' }, { status: 401 });

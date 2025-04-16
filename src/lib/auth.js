@@ -1,20 +1,17 @@
-// src/lib/auth.js
+import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 
-export async function getTokenFromRequest(req) {
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
+
+export async function getTokenFromCookies() {
   try {
-    const token = req.cookies.get('token')?.value;
+    const cookieStore = await cookies(); // Ha de ser esperat amb await
+    const token = cookieStore.get('token')?.value; // Obtenim el token de la cookie
     if (!token) return null;
 
-    const { payload } = await jwtVerify(
-      token,
-      new TextEncoder().encode(process.env.JWT_SECRET)
-    );
-
+    const { payload } = await jwtVerify(token, JWT_SECRET);
     return payload;
   } catch (err) {
     return null;
   }
 }
-
-

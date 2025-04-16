@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt';
 import { z } from 'zod';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getTokenFromRequest } from '@/lib/auth';
+import { getTokenFromCookies } from '@/lib/auth';
 
 const registerSchema = z.object({
   username: z.string().min(1),
@@ -12,7 +12,7 @@ const registerSchema = z.object({
 export async function POST(req) {
   try {
 
-    const tokenValid = await getTokenFromRequest(req);
+    const tokenValid = await getTokenFromCookies(req);
     if (!tokenValid) {
       return NextResponse.json({ error: 'No autoritzat' }, { status: 401 });
     }
