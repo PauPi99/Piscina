@@ -20,11 +20,11 @@ export default function UsuariPage() {
 
   useEffect(() => {
     const verifyAndRenew = async () => {
-      const res = await fetch('/api/admin/verify', { method: 'POST' });
-      if (res.status !== 200) {
-        router.push('/login');
-        return;
-      }
+      // const res = await fetch('/api/admin/verify', { method: 'POST' });
+      // if (res.status !== 200) {
+      //   router.push('/login');
+      //   return;
+      // }
 
       fetchUsuaris(filters, page);
 

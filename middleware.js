@@ -1,34 +1,20 @@
-
 import { NextResponse } from 'next/server';
-import { verify } from 'jsonwebtoken';
-import { cookies } from 'next/headers';
-
-const JWT_SECRET = process.env.JWT_SECRET;
-
-const protectedRoutes = ['/users'];
 
 export function middleware(request) {
-  const { pathname } = request.nextUrl;
-  console.log('Middleware:', pathname);
-  console.log('Protected Routes:', protectedRoutes);
+  console.log('🔥 MIDDLEWARE ACTIVAT:', request.nextUrl.pathname);
 
-  if (protectedRoutes.some(route => pathname.startsWith(route))) {
-    const token = cookies().get('token')?.value;
+  const token = request.cookies.get('token')?.value;
 
-    if (!token) {
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
-
-    try {
-      verify(token, JWT_SECRET);
-    } catch (err) {
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
+  if (!token) {
+    console.log('🚫 No token -> redirecció a /login');
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
+  console.log('✅ Token trobat');
   return NextResponse.next();
 }
 
 export const config = {
-    matcher: ['/users/:path*'], // Protegeix tot sota /users
+    matcher: ['/((?!_next|api|favicon.ico).*)'],
   };
+  
